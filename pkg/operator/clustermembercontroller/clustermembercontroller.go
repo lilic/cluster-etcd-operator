@@ -93,6 +93,12 @@ func (c *ClusterMemberController) reconcileMembers(recorder events.Recorder) err
 		return nil
 	}
 
+	// TODO: remove me
+	members, err := c.etcdClient.MemberList()
+	if err != nil {
+		return err
+	}
+
 	// etcd is healthy, decide if we need to scale
 	podToAdd, err := c.getEtcdPodToAddToMembership()
 	switch {
@@ -109,9 +115,17 @@ func (c *ClusterMemberController) reconcileMembers(recorder events.Recorder) err
 	if err != nil {
 		return err
 	}
-	err = c.etcdClient.MemberAdd(fmt.Sprintf("https://%s:2380", etcdHost))
-	if err != nil {
-		return err
+
+	// TODO hacky
+	if len(members) > 3 {
+		fmt.Println("we have more than 3 members")
+		// add new learner instead
+		c.etcdClient.MemberAddAsLearner(context.Background(), fmt.Sprintf("https://%s:2380", etcdHost))
+	} else {
+		err = c.etcdClient.MemberAdd(fmt.Sprintf("https://%s:2380", etcdHost))
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

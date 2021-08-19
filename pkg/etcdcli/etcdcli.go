@@ -165,6 +165,76 @@ func getEtcdClientWithClientOpts(endpoints []string, opts ...ClientOption) (*cli
 	return cli, err
 }
 
+func (g *etcdClientGetter) MemberPromote(peerURL string) error {
+	g.eventRecorder.Eventf("MemberAddAsLearner", "adding new learner %v", peerURL)
+
+	cli, err := g.getEtcdClient()
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	membersResp, err := cli.MemberList(ctx)
+	if err != nil {
+		return err
+	}
+
+	var learnerID uint64
+	for _, member := range membersResp.Members {
+		for _, currPeerURL := range member.PeerURLs {
+			if currPeerURL == peerURL {
+				if !member.IsLearner {
+					g.eventRecorder.Warningf("MemberNotLearner", "member with peerURL %s already member of the cluster and not learner", peerURL)
+					return nil
+				}
+				learnerID = member.ID
+				// TODO: what if there is no learner with this URL?
+			}
+		}
+	}
+
+	// Promote learner to member.
+	_, err = cli.MemberPromote(ctx, learnerID)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func (g *etcdClientGetter) MemberAddAsLearner(peerURL string) error {
+	g.eventRecorder.Eventf("MemberAddAsLearner", "adding new learner %v", peerURL)
+
+	cli, err := g.getEtcdClient()
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	membersResp, err := cli.MemberList(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, member := range membersResp.Members {
+		for _, currPeerURL := range member.PeerURLs {
+			if currPeerURL == peerURL {
+				g.eventRecorder.Warningf("MemberOrLearnerAlreadyAdded", "member with peerURL %s already part of the cluster", peerURL)
+				return nil
+			}
+		}
+	}
+
+	_, err = cli.MemberAddAsLearner(ctx, []string{peerURL})
+	if err != nil {
+		return err
+	}
+	return err
+}
+
 func (g *etcdClientGetter) MemberAdd(peerURL string) error {
 	g.eventRecorder.Eventf("MemberAdd", "adding new peer %v", peerURL)
 
