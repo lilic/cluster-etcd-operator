@@ -116,9 +116,10 @@ func (c *ClusterMemberController) reconcileMembers(recorder events.Recorder) err
 		return err
 	}
 
-	// TODO hacky
+	// TODO hacky, trigger based on machine numbers afterwards.
 	if len(members) > 3 {
-		fmt.Println("we have more than 3 members")
+
+		fmt.Println("we have more than 3 members - learners---")
 		// add new learner instead
 		c.etcdClient.MemberAddAsLearner(context.Background(), fmt.Sprintf("https://%s:2380", etcdHost))
 	} else {
@@ -127,6 +128,14 @@ func (c *ClusterMemberController) reconcileMembers(recorder events.Recorder) err
 			return err
 		}
 	}
+	// TODO: do we need anything special here to promote them?
+	// promote learners
+	if err := c.etcdClient.MemberPromote(context.Background(), fmt.Sprintf("https://%s:2380", etcdHost)); err != nil {
+		// log error as it might be just we dont have anything to promote
+		klog.Infof("member promotion had error: %v", err)
+
+	}
+
 	return nil
 }
 
