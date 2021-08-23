@@ -34,6 +34,14 @@ func (f *fakeEtcdClient) MemberAdd(peerURL string) error {
 	panic("implement me")
 }
 
+func (f *fakeEtcdClient) MemberAddAsLearner(ctx context.Context, peerURL string) error {
+	panic("implement me")
+}
+
+func (f *fakeEtcdClient) MemberPromote(ctx context.Context, peerURL string) error {
+	panic("implement me")
+}
+
 func (f *fakeEtcdClient) MemberList() ([]*etcdserverpb.Member, error) {
 	return f.members, nil
 }

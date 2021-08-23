@@ -21,6 +21,7 @@ type EtcdClient interface {
 	MemberLister
 	MemberRemover
 	MemberAdderAsLearner
+	MemberPromoter
 	UnhealthyMemberLister
 	MemberStatusChecker
 	Status
@@ -42,7 +43,11 @@ type MemberAdder interface {
 }
 
 type MemberAdderAsLearner interface {
-	MemberAddAsLearner(ctx context.Context, peerURL string) (memberHealth, error)
+	MemberAddAsLearner(ctx context.Context, peerURL string) error
+}
+
+type MemberPromoter interface {
+	MemberPromote(ctx context.Context, peerURL string) error
 }
 
 type MemberHealth interface {

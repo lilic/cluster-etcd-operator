@@ -165,8 +165,8 @@ func getEtcdClientWithClientOpts(endpoints []string, opts ...ClientOption) (*cli
 	return cli, err
 }
 
-func (g *etcdClientGetter) MemberPromote(peerURL string) error {
-	g.eventRecorder.Eventf("MemberAddAsLearner", "adding new learner %v", peerURL)
+func (g *etcdClientGetter) MemberPromote(ctx context.Context, peerURL string) error {
+	g.eventRecorder.Eventf("MemberPromote", "promoting learner %v", peerURL)
 
 	cli, err := g.getEtcdClient()
 	if err != nil {
@@ -203,7 +203,7 @@ func (g *etcdClientGetter) MemberPromote(peerURL string) error {
 	return err
 }
 
-func (g *etcdClientGetter) MemberAddAsLearner(peerURL string) error {
+func (g *etcdClientGetter) MemberAddAsLearner(ctx context.Context, peerURL string) error {
 	g.eventRecorder.Eventf("MemberAddAsLearner", "adding new learner %v", peerURL)
 
 	cli, err := g.getEtcdClient()
@@ -211,10 +211,10 @@ func (g *etcdClientGetter) MemberAddAsLearner(peerURL string) error {
 		return err
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	newCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	membersResp, err := cli.MemberList(ctx)
+	membersResp, err := cli.MemberList(newCtx)
 	if err != nil {
 		return err
 	}
@@ -228,11 +228,11 @@ func (g *etcdClientGetter) MemberAddAsLearner(peerURL string) error {
 		}
 	}
 
-	_, err = cli.MemberAddAsLearner(ctx, []string{peerURL})
+	_, err = cli.MemberAddAsLearner(newCtx, []string{peerURL})
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 func (g *etcdClientGetter) MemberAdd(peerURL string) error {
